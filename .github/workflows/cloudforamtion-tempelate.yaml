@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Serverless web app backend (Lambda + API Gateway REST API + DynamoDB)
+
+Parameters:
+  ArtifactsBucket:
+    Type: String
+    Description: S3 bucket that holds the Lambda zip
+  LambdaKey:
+    Type: String
+    Default: lambda/lambda.zip
+  LambdaRuntime:
+    Type: String
+    Default: nodejs18.x
+  LambdaHandler:
+    Type: String
+    Default: index.handler
+  FunctionName:
+    Type: String
+    Default: webapp-backend
+
+Resources:
+  # ---------- DynamoDB ----------
+  ItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${FunctionName}-items"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # ---------- IAM role for Lambda ----------
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoCrud
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !GetAtt ItemsTable.Arn
+
+  # ---------- Lambda ----------
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref FunctionName
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Handler: !Ref LambdaHandler
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaKey
+      MemorySize: 256
+      Timeout: 10
+      Architectures: [ x86_64 ]
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ItemsTable
+
+  # ---------- API Gateway (REST) ----------
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${FunctionName}-api"
+      EndpointConfiguration:
+        Types: [ REGIONAL ]
+
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: health
+
+  ItemsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: items
+
+  GetHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+
+  GetItemsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ItemsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+
+  # Allow API Gateway to call the Lambda
+  LambdaPermissionForApi:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/*
+
+  # Deploy a "prod" stage
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - GetHealthMethod
+      - GetItemsMethod
+      - LambdaPermissionForApi
+    Properties:
+      RestApiId: !Ref RestApi
+      StageName: prod
+
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for the prod stage
+    Value: !Sub https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+  FunctionArn:
+    Value: !GetAtt LambdaFunction.Arn
+  TableName:
+    Value: !Ref ItemsTable

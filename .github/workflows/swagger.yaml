@@ -1,0 +1,37 @@
+openapi: "3.0.1"
+info:
+  title: "Serverless WebApp API"
+  version: "1.0"
+paths:
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: >-
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        payloadFormatVersion: "2.0"
+  /items:
+    get:
+      responses:
+        "200":
+          description: OK
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: >-
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+        payloadFormatVersion: "2.0"
+x-amazon-apigateway-cors:
+  allowOrigins:
+    - "*"
+  allowMethods:
+    - GET
+    - OPTIONS
+  allowHeaders:
+    - "*"
