@@ -4,10 +4,12 @@ generator client {
 }
 
 generator zod {
-  provider         = "zod-prisma-types"
-  output           = "../src/lib/generated/prisma/zod"
-  useMultipleFiles = true
-  writeBarrelFiles = false
+  provider                 = "zod-prisma-types"
+  output                   = "../src/lib/generated/prisma/zod"
+  useMultipleFiles          = true
+  writeBarrelFiles          = false
+  stringType               = "string"              // ✅ crucial fix for z.uuid()
+  addInputTypeValidation   = true
 }
 
 datasource db {
@@ -16,7 +18,7 @@ datasource db {
 }
 
 model User {
-  id       String     @id
+  id       String     @id @default(uuid())
   TodoItem TodoItem[]
 }
 
