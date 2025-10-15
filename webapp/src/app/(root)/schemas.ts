@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import TodoItemStatusSchema from '@/lib/generated/prisma/zod/inputTypeSchemas/TodoItemStatusSchema';
+
+export const TodoItemStatusSchema = z.enum(["PENDING", "COMPLETED"]);
 
 export const createTodoSchema = z.object({
   title: z.string().min(1, 'Title is required'),
