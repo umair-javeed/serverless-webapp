@@ -1,17 +1,32 @@
-// Temporary stub to unblock the build/deploy.
-// Replace with real Amplify auth handlers later.
+import { NextResponse } from "next/server";
+import { CognitoIdentityProviderClient, InitiateAuthCommand } from "@aws-sdk/client-cognito-identity-provider";
 
-import { NextResponse } from 'next/server';
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Use POST to initiate Cognito sign-in.",
+  });
+}
 
-export const GET = async () => {
-  return NextResponse.json({ ok: true, route: 'auth stub GET' });
-};
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { username, password } = body;
 
-export const POST = async (req: Request) => {
+  const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
+
   try {
-    const body = await req.json().catch(() => ({}));
-    return NextResponse.json({ ok: true, route: 'auth stub POST', body });
-  } catch {
-    return NextResponse.json({ ok: false }, { status: 400 });
+    const command = new InitiateAuthCommand({
+      AuthFlow: "USER_PASSWORD_AUTH",
+      AuthParameters: {
+        USERNAME: username,
+        PASSWORD: password,
+      },
+      ClientId: process.env.COGNITO_CLIENT_ID!,
+    });
+
+    const response = await client.send(command);
+    return NextResponse.json({ ok: true, tokens: response.AuthenticationResult });
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
   }
-};
+}
