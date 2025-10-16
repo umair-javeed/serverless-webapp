@@ -1,4 +1,3 @@
-cat > webapp/tailwind.config.js << 'EOF'
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -53,4 +52,3 @@ module.exports = {
   },
   plugins: [],
 }
-EOF
