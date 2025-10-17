@@ -5,9 +5,10 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm ci
+            - npm ci --legacy-peer-deps
         build:
           commands:
+            - cp .env.local.example .env.local
             - npm run build
       artifacts:
         baseDirectory: .next
