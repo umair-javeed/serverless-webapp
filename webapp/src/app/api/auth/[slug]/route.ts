@@ -7,65 +7,53 @@ export async function GET(
   const { slug } = await context.params;
 
   if (slug === "sign-in") {
-    const userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.USER_POOL_ID;
-    const clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID;
-    const region = process.env.AWS_REGION || process.env.NEXT_PUBLIC_AWS_REGION || "us-east-1";
-    const cognitoDomain = process.env.COGNITO_DOMAIN || process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+    const userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID;
+    const clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_USER_POOL_CLIENT_ID;
+    const region = process.env.NEXT_PUBLIC_AWS_REGION || "us-east-1";
+    const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || process.env.COGNITO_DOMAIN;
 
-    const origin = request.nextUrl.origin;
-    const redirectUri = `${origin}/api/auth/callback`;
+    if (!userPoolId || !clientId || !cognitoDomain) {
+      return NextResponse.json(
+        { 
+          error: "Missing Cognito configuration",
+          hasUserPoolId: !!userPoolId,
+          hasClientId: !!clientId,
+          hasCognitoDomain: !!cognitoDomain
+        },
+        { status: 500 }
+      );
+    }
+
+    // Use NEXTAUTH_URL or fallback to request origin
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://main.d2yytqurf9gb03.amplifyapp.com";
+    const redirectUri = `${baseUrl}/api/auth/callback`;
     
-    // TEMPORARY DEBUG: Show configuration instead of redirecting
-    return NextResponse.json({
-      debug: "Auth Configuration Check",
-      origin: origin,
-      redirectUri: redirectUri,
-      cognitoDomain: cognitoDomain,
-      region: region,
-      clientId: clientId?.substring(0, 15) + "...",
-      userPoolId: userPoolId?.substring(0, 15) + "...",
-      hasUserPoolId: !!userPoolId,
-      hasClientId: !!clientId,
-      hasCognitoDomain: !!cognitoDomain,
-      envVarsChecked: {
-        NEXT_PUBLIC_USER_POOL_ID: !!process.env.NEXT_PUBLIC_USER_POOL_ID,
-        USER_POOL_ID: !!process.env.USER_POOL_ID,
-        NEXT_PUBLIC_USER_POOL_CLIENT_ID: !!process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
-        COGNITO_CLIENT_ID: !!process.env.COGNITO_CLIENT_ID,
-        NEXT_PUBLIC_AWS_REGION: !!process.env.NEXT_PUBLIC_AWS_REGION,
-        AWS_REGION: !!process.env.AWS_REGION,
-        NEXT_PUBLIC_COGNITO_DOMAIN: !!process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
-        COGNITO_DOMAIN: !!process.env.COGNITO_DOMAIN
-      },
-      fullAuthUrl: cognitoDomain && clientId 
-        ? `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`
-        : "MISSING_REQUIRED_VALUES"
-    });
+    const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    console.log("Redirecting to Cognito:", authUrl);
+    return NextResponse.redirect(authUrl);
   }
 
   if (slug === "callback") {
     const code = request.nextUrl.searchParams.get("code");
     
     if (code) {
+      console.log("Auth callback successful, code received");
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    return NextResponse.redirect(new URL("/sign-in?error=auth_failed", request.url));
+    const error = request.nextUrl.searchParams.get("error");
+    console.log("Auth callback error:", error);
+    return NextResponse.redirect(new URL("/sign-in?error=" + error, request.url));
   }
 
   if (slug === "sign-out") {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  return NextResponse.json(
-    { ok: true, message: "Use GET /api/auth/sign-in to initiate OAuth flow." },
-    { status: 200 }
-  );
+  return NextResponse.json({ ok: true, message: "Auth API" });
 }
 
 export async function POST() {
-  return NextResponse.json(
-    { ok: true, message: "Use GET /api/auth/sign-in to initiate OAuth flow." },
-    { status: 200 }
-  );
+  return NextResponse.json({ ok: true, message: "Use GET" });
 }
