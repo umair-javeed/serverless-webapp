@@ -10,12 +10,14 @@ applications:
           commands:
             - cp .env.local.example .env.local
             - npm run build
+            - cp -r .next/standalone/webapp/. .next/standalone-output/
+            - cp -r .next/static .next/standalone-output/.next/
+            - cp -r public .next/standalone-output/
       artifacts:
-        baseDirectory: .next
+        baseDirectory: .next/standalone-output
         files:
           - '**/*'
       cache:
         paths:
           - node_modules/**/*
           - .next/cache/**/*
-    platform: WEB_COMPUTE
