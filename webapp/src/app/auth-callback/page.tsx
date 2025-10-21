@@ -1,18 +1,16 @@
 'use client';
 
-import { Amplify } from 'aws-amplify';
-import { signInWithRedirect } from 'aws-amplify/auth';
-import { amplifyConfig } from '@/lib/amplify-config';
-
-Amplify.configure(amplifyConfig, { ssr: true });
-
 export default function SignInPage() {
-  const handleSignIn = async () => {
-    try {
-      await signInWithRedirect();
-    } catch (error) {
-      console.error('Sign in error:', error);
-    }
+  const handleSignIn = () => {
+    const clientId = '64b8sr4lmc5icnadks6u9m8jke';
+    const cognitoDomain = 'us-east-1tv8uaa8yj';
+    const region = 'us-east-1';
+    const redirectUri = 'https://serverless-webapp.vercel.app';
+    
+    const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    // Force browser redirect (no fetch, no CORS)
+    window.location.href = authUrl;
   };
 
   return (
