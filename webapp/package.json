@@ -17,7 +17,7 @@
     "@aws-sdk/client-lambda": "^3.799.0",
     "@aws-sdk/client-ssm": "^3.812.0",
     "@aws-sdk/client-translate": "^3.787.0",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^3.10.0",
     "@next-safe-action/adapter-react-hook-form": "^1.0.14",
     "@prisma/client": "^6.17.1",
     "aws-amplify": "^6.15.7",
