@@ -19,10 +19,9 @@ export async function GET(
       );
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "https://main.d2yytqurf9gb03.amplifyapp.com";
+    const baseUrl = process.env.NEXTAUTH_URL || "https://serverless-webapp.vercel.app";
     const redirectUri = `${baseUrl}/api/auth/callback`;
     
-    // Redirect to Cognito Hosted UI
     const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
     return NextResponse.redirect(authUrl);
@@ -33,7 +32,6 @@ export async function GET(
     const error = request.nextUrl.searchParams.get("error");
 
     if (error) {
-      console.error("Auth error:", error);
       return NextResponse.redirect(new URL("/sign-in?error=" + error, request.url));
     }
 
@@ -41,22 +39,28 @@ export async function GET(
       return NextResponse.redirect(new URL("/sign-in?error=no_code", request.url));
     }
 
-    // Exchange code for tokens
     const clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_USER_POOL_CLIENT_ID;
+    const clientSecret = process.env.COGNITO_CLIENT_SECRET;
     const region = process.env.NEXT_PUBLIC_AWS_REGION || "us-east-1";
     const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || process.env.COGNITO_DOMAIN;
-    const baseUrl = process.env.NEXTAUTH_URL || "https://main.d2yytqurf9gb03.amplifyapp.com";
+    const baseUrl = process.env.NEXTAUTH_URL || "https://serverless-webapp.vercel.app";
     const redirectUri = `${baseUrl}/api/auth/callback`;
 
     try {
-      // Exchange authorization code for tokens
       const tokenUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/token`;
+      
+      const headers: HeadersInit = {
+        "Content-Type": "application/x-www-form-urlencoded",
+      };
+
+      if (clientSecret) {
+        const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+        headers["Authorization"] = `Basic ${auth}`;
+      }
       
       const tokenResponse = await fetch(tokenUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers,
         body: new URLSearchParams({
           grant_type: "authorization_code",
           client_id: clientId!,
@@ -72,11 +76,8 @@ export async function GET(
       }
 
       const tokens = await tokenResponse.json();
-      
-      // Redirect to auth-callback page which will handle Amplify session setup
       const response = NextResponse.redirect(new URL("/auth-callback", request.url));
       
-      // Store tokens in cookies
       response.cookies.set("idToken", tokens.id_token, {
         httpOnly: true,
         secure: true,
@@ -96,7 +97,7 @@ export async function GET(
           httpOnly: true,
           secure: true,
           sameSite: "lax",
-          maxAge: 30 * 24 * 60 * 60, // 30 days
+          maxAge: 30 * 24 * 60 * 60,
         });
       }
 
