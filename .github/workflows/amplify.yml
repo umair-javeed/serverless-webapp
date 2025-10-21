@@ -17,3 +17,5 @@ applications:
       cache:
         paths:
           - node_modules/**/*
+          - .next/cache/**/*
+    platform: WEB_COMPUTE
