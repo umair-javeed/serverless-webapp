@@ -35,7 +35,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - sign-in (sign-in page)
+     * - auth-callback (OAuth callback handler)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sign-in).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sign-in|auth-callback).*)',
   ],
 };
