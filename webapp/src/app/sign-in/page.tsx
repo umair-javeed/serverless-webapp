@@ -1,6 +1,18 @@
-import Link from 'next/link';
+'use client';
 
 export default function SignInPage() {
+  const handleSignIn = () => {
+    const clientId = '64b8sr4lmc5icnadks6u9m8jke';
+    const cognitoDomain = 'us-east-1tv8uaa8yj';
+    const region = 'us-east-1';
+    const redirectUri = 'https://serverless-webapp.vercel.app';
+    
+    const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    // Force browser redirect
+    window.location.href = authUrl;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -15,15 +27,12 @@ export default function SignInPage() {
               Please sign in with your Cognito account to continue
             </p>
 
-            <Link
-              href="/api/auth/sign-in"
-              // you can add a query string to change the locale of cognito managed login page.
-              // href="/api/auth/sign-in?lang=ja"
+            <button
+              onClick={handleSignIn}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              prefetch={false} // prevent CORS error
             >
               Sign in with Cognito
-            </Link>
+            </button>
           </div>
         </div>
       </div>
