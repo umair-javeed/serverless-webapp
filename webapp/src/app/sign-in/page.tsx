@@ -1,20 +1,24 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const code = searchParams.get('code');
 
-  useEffect(() => {
-    const code = searchParams.get('code');
-    
-    if (code) {
-      // Redirect to auth-callback to process the code
-      router.push(`/auth-callback?code=${code}`);
-    }
-  }, [searchParams, router]);
+  if (code) {
+    // If we have a code, redirect to auth-callback
+    router.push(`/auth-callback?code=${code}`);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Processing sign-in...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSignIn = () => {
     const clientId = '64b8sr4lmc5icnadks6u9m8jke';
@@ -55,5 +59,17 @@ export default function SignInPage() {
         <p>© {new Date().getFullYear()} Todo App. All rights reserved.</p>
       </footer>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }
