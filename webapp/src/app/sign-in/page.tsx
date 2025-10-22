@@ -1,15 +1,29 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
 export default function SignInPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const code = searchParams.get('code');
+    
+    if (code) {
+      // Redirect to auth-callback to process the code
+      router.push(`/auth-callback?code=${code}`);
+    }
+  }, [searchParams, router]);
+
   const handleSignIn = () => {
     const clientId = '64b8sr4lmc5icnadks6u9m8jke';
     const cognitoDomain = 'us-east-1tv8uaa8yj';
     const region = 'us-east-1';
-    const redirectUri = 'https://serverless-webapp.vercel.app';
+    const redirectUri = 'https://serverless-webapp.vercel.app/sign-in';
     
     const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
-    // Force browser redirect
     window.location.href = authUrl;
   };
 
