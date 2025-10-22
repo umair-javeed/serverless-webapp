@@ -1,24 +1,18 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 function SignInContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
 
-  if (code) {
-    // If we have a code, redirect to auth-callback
-    router.push(`/auth-callback?code=${code}`);
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p>Processing sign-in...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (code) {
+      // Use window.location for immediate redirect
+      window.location.href = `/auth-callback?code=${code}`;
+    }
+  }, [code]);
 
   const handleSignIn = () => {
     const clientId = '64b8sr4lmc5icnadks6u9m8jke';
@@ -30,6 +24,16 @@ function SignInContent() {
     
     window.location.href = authUrl;
   };
+
+  if (code) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p>Processing sign-in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
