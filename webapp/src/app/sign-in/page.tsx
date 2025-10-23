@@ -1,22 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { signInWithRedirect } from 'aws-amplify/auth';
-
 export default function SignInPage() {
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      await signInWithRedirect();
-    } catch (err: any) {
-      console.error('Sign in error:', err);
-      setError(err.message || 'Sign in failed');
-      setLoading(false);
-    }
+  const handleSignIn = () => {
+    // Direct URL to Cognito Hosted UI
+    const cognitoUrl = 'https://us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com';
+    const clientId = '64b8sr4lmc5icnadks6u9m8jke';
+    const redirectUri = window.location.origin;
+    
+    const loginUrl = `${cognitoUrl}/login?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    window.location.href = loginUrl;
   };
 
   return (
@@ -33,18 +26,11 @@ export default function SignInPage() {
               Please sign in with your Cognito account to continue
             </p>
 
-            {error && (
-              <div className="mb-4 w-full p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                {error}
-              </div>
-            )}
-
             <button
               onClick={handleSignIn}
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {loading ? 'Redirecting...' : 'Sign in with Cognito'}
+              Sign in with Cognito
             </button>
           </div>
         </div>
@@ -56,3 +42,15 @@ export default function SignInPage() {
     </div>
   );
 }
+```
+
+### Update Cognito to allow ANY subdomain:
+
+In Cognito callback URLs, use wildcards:
+
+**Allowed callback URLs:**
+```
+https://serverless-webapp.vercel.app
+https://serverless-webapp-git-main-umair-javeeds-projects.vercel.app
+https://serverless-webapp-umair-javeeds-projects.vercel.app
+http://localhost:3010
