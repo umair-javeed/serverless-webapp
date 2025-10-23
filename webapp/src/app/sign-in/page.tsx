@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Amplify } from 'aws-amplify';
 import { signInWithRedirect, getCurrentUser } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ const amplifyConfig: ResourcesConfig = {
           scopes: ['email', 'openid', 'profile'],
           redirectSignIn: ['https://serverless-webapp.vercel.app/'],
           redirectSignOut: ['https://serverless-webapp.vercel.app/sign-in'],
-          responseType: 'code' as const, // Fix: add 'as const'
+          responseType: 'code' as const,
         },
       },
     },
@@ -28,6 +28,8 @@ Amplify.configure(amplifyConfig, { ssr: true });
 
 export default function SignInPage() {
   const router = useRouter();
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getCurrentUser()
@@ -41,9 +43,14 @@ export default function SignInPage() {
 
   const handleSignIn = async () => {
     try {
+      setLoading(true);
+      setError('');
+      console.log('Initiating sign in with redirect...');
       await signInWithRedirect();
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      setError(err.message || 'Sign in failed');
+      setLoading(false);
     }
   };
 
@@ -61,11 +68,18 @@ export default function SignInPage() {
               Please sign in with your Cognito account to continue
             </p>
 
+            {error && (
+              <div className="mb-4 w-full p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
             <button
               onClick={handleSignIn}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign in with Cognito
+              {loading ? 'Redirecting...' : 'Sign in with Cognito'}
             </button>
           </div>
         </div>
