@@ -2,11 +2,12 @@
 
 export default function SignInPage() {
   const handleSignIn = () => {
-    const cognitoUrl = 'https://us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com';
+    const cognitoDomain = 'us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com';
     const clientId = '64b8sr4lmc5icnadks6u9m8jke';
     const redirectUri = typeof window !== 'undefined' ? window.location.origin : 'https://serverless-webapp.vercel.app';
     
-    const loginUrl = `${cognitoUrl}/login?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    // Use /oauth2/authorize instead of /login
+    const loginUrl = `https://${cognitoDomain}/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     window.location.href = loginUrl;
   };
