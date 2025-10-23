@@ -1,39 +1,51 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { Amplify } from 'aws-amplify';
+import { signInWithRedirect, getCurrentUser } from 'aws-amplify/auth';
+import { useRouter } from 'next/navigation';
 
-function SignInContent() {
-  const searchParams = useSearchParams();
-  const code = searchParams.get('code');
+const amplifyConfig = {
+  Auth: {
+    Cognito: {
+      userPoolId: 'us-east-1_tv8uaa8YJ',
+      userPoolClientId: '64b8sr4lmc5icnadks6u9m8jke',
+      loginWith: {
+        oauth: {
+          domain: 'us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com',
+          scopes: ['email', 'openid', 'profile'],
+          redirectSignIn: ['https://serverless-webapp.vercel.app/'],
+          redirectSignOut: ['https://serverless-webapp.vercel.app/sign-in'],
+          responseType: 'code',
+        },
+      },
+    },
+  },
+};
+
+Amplify.configure(amplifyConfig, { ssr: true });
+
+export default function SignInPage() {
+  const router = useRouter();
 
   useEffect(() => {
-    if (code) {
-      // Use window.location for immediate redirect
-      window.location.href = `/auth-callback?code=${code}`;
+    // Check if user is already signed in
+    getCurrentUser()
+      .then(() => {
+        router.push('/');
+      })
+      .catch(() => {
+        // Not signed in, stay on this page
+      });
+  }, [router]);
+
+  const handleSignIn = async () => {
+    try {
+      await signInWithRedirect({ provider: 'Cognito' });
+    } catch (error) {
+      console.error('Sign in error:', error);
     }
-  }, [code]);
-
-  const handleSignIn = () => {
-    const clientId = '64b8sr4lmc5icnadks6u9m8jke';
-    const cognitoDomain = 'us-east-1tv8uaa8yj';
-    const region = 'us-east-1';
-    const redirectUri = 'https://serverless-webapp.vercel.app/sign-in';
-    
-    const authUrl = `https://${cognitoDomain}.auth.${region}.amazoncognito.com/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = authUrl;
   };
-
-  if (code) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p>Processing sign-in...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -63,17 +75,5 @@ function SignInContent() {
         <p>© {new Date().getFullYear()} Todo App. All rights reserved.</p>
       </footer>
     </div>
-  );
-}
-
-export default function SignInPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    }>
-      <SignInContent />
-    </Suspense>
   );
 }
