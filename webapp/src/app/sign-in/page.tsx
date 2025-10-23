@@ -1,44 +1,81 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 
-export default function SignInPage() {
-  const handleSignIn = () => {
-    const cognitoDomain = 'us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com';
-    const clientId = '64b8sr4lmc5icnadks6u9m8jke';
-    const redirectUri = typeof window !== 'undefined' ? window.location.origin : 'https://serverless-webapp.vercel.app';
-    
-    // Use /oauth2/authorize instead of /login
-    const loginUrl = `https://${cognitoDomain}/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = loginUrl;
-  };
+export const dynamic = 'force-dynamic';
 
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const params = await searchParams;
+  const code = params.code;
+
+  // If we have an OAuth code, exchange it for tokens
+  if (code) {
+    try {
+      const tokenUrl = 'https://us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com/oauth2/token';
+      const clientId = '64b8sr4lmc5icnadks6u9m8jke';
+      const clientSecret = '1mlpgj0m8q5e6afao50k7o2483icqiodn345agjv32p2sv6hmaf6';
+      const redirectUri = 'https://serverless-webapp.vercel.app';
+
+      const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${auth}`,
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: clientId,
+          code: code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (response.ok) {
+        const tokens = await response.json();
+        const cookieStore = await cookies();
+        
+        // Store tokens in cookies
+        cookieStore.set('idToken', tokens.id_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 3600,
+        });
+        
+        cookieStore.set('accessToken', tokens.access_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 3600,
+        });
+
+        // Redirect to home without code parameter
+        redirect('/');
+      } else {
+        console.error('Token exchange failed:', await response.text());
+        redirect('/sign-in?error=token_exchange_failed');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      redirect('/sign-in?error=auth_failed');
+    }
+  }
+
+  // If no code, show the home page (will be protected by middleware)
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Todo App</h2>
-        <p className="mt-2 text-center text-sm text-gray-600">Sign in to manage your tasks</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Todo App</h1>
+        <p>Welcome! You are signed in.</p>
+        <a href="/sign-out" className="text-blue-600 hover:underline">
+          Sign out
+        </a>
       </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="flex flex-col items-center">
-            <p className="mb-6 text-center text-sm text-gray-600">
-              Please sign in with your Cognito account to continue
-            </p>
-
-            <button
-              onClick={handleSignIn}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign in with Cognito
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <footer className="mt-8 text-center text-sm text-gray-500">
-        <p>© {new Date().getFullYear()} Todo App. All rights reserved.</p>
-      </footer>
     </div>
   );
 }
