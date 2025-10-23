@@ -1,51 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Amplify } from 'aws-amplify';
-import { signInWithRedirect, getCurrentUser } from 'aws-amplify/auth';
-import { useRouter } from 'next/navigation';
-import type { ResourcesConfig } from 'aws-amplify';
-
-const amplifyConfig: ResourcesConfig = {
-  Auth: {
-    Cognito: {
-      userPoolId: 'us-east-1_tv8uaa8YJ',
-      userPoolClientId: '64b8sr4lmc5icnadks6u9m8jke',
-      loginWith: {
-        oauth: {
-          domain: 'us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com',
-          scopes: ['email', 'openid', 'profile'],
-          redirectSignIn: ['https://serverless-webapp.vercel.app/'],
-          redirectSignOut: ['https://serverless-webapp.vercel.app/sign-in'],
-          responseType: 'code' as const,
-        },
-      },
-    },
-  },
-};
-
-Amplify.configure(amplifyConfig, { ssr: true });
+import { useState } from 'react';
+import { signInWithRedirect } from 'aws-amplify/auth';
 
 export default function SignInPage() {
-  const router = useRouter();
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    getCurrentUser()
-      .then(() => {
-        router.push('/');
-      })
-      .catch(() => {
-        // Not signed in
-      });
-  }, [router]);
 
   const handleSignIn = async () => {
     try {
       setLoading(true);
       setError('');
-      console.log('Initiating sign in with redirect...');
       await signInWithRedirect();
     } catch (err: any) {
       console.error('Sign in error:', err);
