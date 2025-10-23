@@ -1,5 +1,9 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { getSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import CreateTodoForm from './components/CreateTodoForm';
+import TodoItem from './components/TodoItem';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +15,7 @@ export default async function HomePage({
   const params = await searchParams;
   const code = params.code;
 
+  // Handle OAuth callback
   if (code) {
     try {
       const tokenUrl = 'https://us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com/oauth2/token';
@@ -53,24 +58,66 @@ export default async function HomePage({
         });
 
         redirect('/');
-      } else {
-        console.error('Token exchange failed:', await response.text());
-        redirect('/sign-in?error=token_exchange_failed');
       }
     } catch (error) {
       console.error('Auth error:', error);
-      redirect('/sign-in?error=auth_failed');
     }
   }
 
+  // Get user session and todos
+  let session;
+  try {
+    session = await getSession();
+  } catch (error) {
+    redirect('/sign-in');
+  }
+
+  const todos = await prisma.todo.findMany({
+    where: { userId: session.userId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const pendingTodos = todos.filter((todo) => !todo.completed);
+  const completedTodos = todos.filter((todo) => todo.completed);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Todo App</h1>
-        <p className="mb-4">Welcome! You are signed in.</p>
-        <a href="/sign-out" className="text-blue-600 hover:underline">
-          Sign out
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-indigo-600 text-white py-4 px-8 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Todo App</h1>
+        
+          href="/sign-out"
+          className="px-4 py-2 bg-white text-indigo-600 rounded hover:bg-gray-100"
+        >
+          Sign Out
         </a>
+      </div>
+
+      <div className="max-w-4xl mx-auto p-8">
+        <CreateTodoForm />
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">
+            Pending Tasks ({pendingTodos.length})
+          </h2>
+          <div className="space-y-2">
+            {pendingTodos.map((todo) => (
+              <TodoItem key={todo.id} todo={todo} />
+            ))}
+          </div>
+        </div>
+
+        {completedTodos.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">
+              Completed Tasks ({completedTodos.length})
+            </h2>
+            <div className="space-y-2">
+              {completedTodos.map((todo) => (
+                <TodoItem key={todo.id} todo={todo} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
