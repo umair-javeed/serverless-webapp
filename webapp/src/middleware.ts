@@ -5,7 +5,6 @@ export async function middleware(request: NextRequest) {
   const idToken = request.cookies.get('idToken');
   const accessToken = request.cookies.get('accessToken');
 
-  // Check if user has valid tokens
   const authenticated = idToken && accessToken;
 
   if (authenticated) {
