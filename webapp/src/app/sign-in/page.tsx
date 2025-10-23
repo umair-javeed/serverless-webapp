@@ -2,10 +2,9 @@
 
 export default function SignInPage() {
   const handleSignIn = () => {
-    // Direct URL to Cognito Hosted UI
     const cognitoUrl = 'https://us-east-1tv8uaa8yj.auth.us-east-1.amazoncognito.com';
     const clientId = '64b8sr4lmc5icnadks6u9m8jke';
-    const redirectUri = window.location.origin;
+    const redirectUri = typeof window !== 'undefined' ? window.location.origin : 'https://serverless-webapp.vercel.app';
     
     const loginUrl = `${cognitoUrl}/login?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
@@ -42,15 +41,3 @@ export default function SignInPage() {
     </div>
   );
 }
-```
-
-### Update Cognito to allow ANY subdomain:
-
-In Cognito callback URLs, use wildcards:
-
-**Allowed callback URLs:**
-```
-https://serverless-webapp.vercel.app
-https://serverless-webapp-git-main-umair-javeeds-projects.vercel.app
-https://serverless-webapp-umair-javeeds-projects.vercel.app
-http://localhost:3010
