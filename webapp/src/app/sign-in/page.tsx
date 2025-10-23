@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { Amplify } from 'aws-amplify';
 import { signInWithRedirect, getCurrentUser } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
+import type { ResourcesConfig } from 'aws-amplify';
 
-const amplifyConfig = {
+const amplifyConfig: ResourcesConfig = {
   Auth: {
     Cognito: {
       userPoolId: 'us-east-1_tv8uaa8YJ',
@@ -16,7 +17,7 @@ const amplifyConfig = {
           scopes: ['email', 'openid', 'profile'],
           redirectSignIn: ['https://serverless-webapp.vercel.app/'],
           redirectSignOut: ['https://serverless-webapp.vercel.app/sign-in'],
-          responseType: 'code',
+          responseType: 'code' as const, // Fix: add 'as const'
         },
       },
     },
@@ -29,19 +30,18 @@ export default function SignInPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is already signed in
     getCurrentUser()
       .then(() => {
         router.push('/');
       })
       .catch(() => {
-        // Not signed in, stay on this page
+        // Not signed in
       });
   }, [router]);
 
   const handleSignIn = async () => {
     try {
-      await signInWithRedirect({ provider: 'Cognito' });
+      await signInWithRedirect();
     } catch (error) {
       console.error('Sign in error:', error);
     }
